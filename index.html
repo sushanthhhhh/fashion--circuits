@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fashion Circuits | Arduino Starter Kit</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+  /* ===== RESET & VARIABLES ===== */
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --bg-primary: #f8fafc; --bg-secondary: #ffffff; --text-primary: #0f172a; --text-secondary: #334155;
+    --accent-primary: #ff6b1a; --accent-secondary: #2dd4bf; --accent-glow: #ff8c42;
+    --accent-dim: rgba(255,107,26,0.1); --border-color: rgba(255,107,26,0.2);
+    --card-bg: #ffffff; --header-bg: #0a0f2e; --header-text: #ffffff;
+    --code-bg: #1e293b; --code-text: #38bdf8; --icon-fill: #ffffff;
+    --footer-border: rgba(255,107,26,0.2); --step-color: #ff6b1a;
+  }
+  [data-theme="dark"] {
+    --bg-primary: #0f172a; --bg-secondary: #1e293b; --text-primary: #f1f5f9; --text-secondary: #cbd5e1;
+    --accent-primary: #ff8c42; --accent-secondary: #5eead4; --accent-glow: #ffb347;
+    --accent-dim: rgba(255,140,66,0.2); --border-color: rgba(255,140,66,0.4);
+    --card-bg: #1e293b; --header-bg: #020617; --header-text: #f1f5f9;
+    --code-bg: #0f172a; --code-text: #7dd3fc; --icon-fill: #f1f5f9;
+    --footer-border: rgba(255,140,66,0.3); --step-color: #ffb347;
+  }
+  body {
+    font-family: 'DM Sans', sans-serif; background: var(--bg-primary); color: var(--text-primary);
+    line-height: 1.7; transition: background-color 0.3s ease, color 0.2s ease;
+    overflow-x: hidden; min-height: 100vh;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: linear-gradient(var(--accent-dim) 1px, transparent 1px),
+                      linear-gradient(90deg, var(--accent-dim) 1px, transparent 1px);
+    background-size: 40px 40px; pointer-events: none; z-index: 0; opacity: 0.4;
+    animation: drift 20s linear infinite, pulseOpacity 6s infinite alternate;
+  }
+  @keyframes drift { 0%{background-position:0 0;} 100%{background-position:40px 40px;} }
+  @keyframes pulseOpacity { 0%{opacity:0.3;} 100%{opacity:0.5;} }
+  .glow-orb {
+    position: fixed; width: 500px; height: 500px;
+    background: radial-gradient(circle at 30% 30%, var(--accent-primary), var(--accent-secondary), transparent 70%);
+    border-radius: 50%; pointer-events: none; z-index: 0; opacity: 0.15; filter: blur(70px);
+    animation: float 20s infinite alternate;
+  }
+  .orb-1 { top: -100px; left: -100px; }
+  .orb-2 { bottom: -100px; right: -100px; width: 400px; height: 400px; animation-delay: -5s; }
+  @keyframes float { 0%{transform:translate(0,0) scale(1);} 100%{transform:translate(100px,100px) scale(1.2);} }
+
+  /* ===== HEADER ===== */
+  .header {
+    background: var(--header-bg); display: flex; align-items: center; justify-content: space-between;
+    padding: 0 40px 0 0; height: clamp(60px, 10vw, 90px); position: sticky; top: 0; z-index: 1000;
+    border-top: 2px solid var(--accent-primary); border-bottom: 2px solid var(--accent-primary);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2); transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    animation: borderPulseBoth 8s infinite alternate;
+  }
+  @keyframes borderPulseBoth {
+    0% { border-top-color: var(--accent-primary); border-bottom-color: var(--accent-primary); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    50% { border-top-color: var(--accent-secondary); border-bottom-color: var(--accent-secondary); box-shadow: 0 4px 30px rgba(45,212,191,0.3); }
+    100% { border-top-color: var(--accent-primary); border-bottom-color: var(--accent-primary); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+  }
+  .brand { display: flex; align-items: center; height: 100%; gap: clamp(8px,2vw,20px); overflow: hidden; }
+  .logo-wrapper { height: 100%; overflow: hidden; }
+  .logo-svg { height: 100% !important; width: auto !important; display: block; mix-blend-mode: screen; filter: brightness(1.02); outline: none; -webkit-backface-visibility: hidden; backface-visibility: hidden; transform: translateZ(0) translateX(-1px); margin-right: -1px; transition: transform 0.3s cubic-bezier(0.2,0.9,0.4,1.1), filter 0.3s; }
+  .logo-wrapper:hover .logo-svg { transform: translateZ(0) translateX(-1px) scale(1.05); filter: brightness(1.1) drop-shadow(0 0 8px var(--accent-glow)); }
+  .logo-stack { display: flex; flex-direction: column; justify-content: center; height: 100%; line-height: 1.1; transition: transform 0.2s; }
+  .brand:hover .logo-stack { transform: translateX(2px); }
+  .logo-top { font-family: 'Space Mono', monospace; font-size: clamp(0.9rem,3vw,1.2rem); font-weight: 300; letter-spacing: 2px; color: var(--header-text); text-transform: uppercase; transition: letter-spacing 0.2s; }
+  .brand:hover .logo-top { letter-spacing: 3px; }
+  .logo-bottom { font-family: 'Space Mono', monospace; font-size: clamp(1.2rem,5vw,1.8rem); font-weight: 800; color: var(--accent-primary); text-transform: uppercase; letter-spacing: 1px; margin-top: -3px; text-shadow: 0 0 8px var(--accent-dim); transition: text-shadow 0.2s, letter-spacing 0.2s; }
+  .brand:hover .logo-bottom { letter-spacing: 2px; text-shadow: 0 0 12px var(--accent-glow); }
+  .logo-stack::after { content: ''; display: block; width: 100%; height: 2px; background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary)); margin-top: 2px; border-radius: 2px; transition: transform 0.2s; transform-origin: left; }
+  .brand:hover .logo-stack::after { transform: scaleX(1.1); }
+
+  .nav-menu { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .nav-menu a { color: var(--header-text); text-decoration: none; font-family: 'Space Mono', monospace; font-size: clamp(0.7rem,2vw,0.8rem); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s; position: relative; white-space: nowrap; }
+  .nav-menu a::after { content: ''; position: absolute; bottom: 4px; left: 12px; right: 12px; height: 2px; background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary)); transform: scaleX(0); transition: transform 0.2s; }
+  .nav-menu a:hover { color: var(--accent-primary); }
+  .nav-menu a:hover::after { transform: scaleX(1); }
+  .nav-menu a.active { background: var(--accent-dim); color: var(--accent-primary); }
+  .nav-menu a.active::after { transform: scaleX(1); }
+
+  .header-actions { display: flex; align-items: center; gap: 15px; }
+  .theme-toggle { position: relative; width: 40px; height: 40px; border-radius: 50%; background: none; border: none; cursor: pointer; overflow: hidden; transition: transform 0.2s; }
+  .theme-toggle:hover { transform: scale(1.1); animation: pulse 0.6s ease-in-out; }
+  .theme-toggle:active { transform: scale(0.9); }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 var(--accent-dim);} 70%{box-shadow:0 0 0 10px transparent;} 100%{box-shadow:0 0 0 0 transparent;} }
+  .theme-toggle svg { position: absolute; top: 50%; left: 50%; width: 24px; height: 24px; fill: var(--icon-fill); transition: opacity 0.4s ease, transform 0.5s ease; }
+  .sun-icon { opacity: 1; transform: translate(-50%,-50%) rotate(0deg); }
+  .moon-icon { opacity: 0; transform: translate(-50%,-50%) rotate(90deg); }
+  [data-theme="dark"] .sun-icon { opacity: 0; transform: translate(-50%,-50%) rotate(-90deg); }
+  [data-theme="dark"] .moon-icon { opacity: 1; transform: translate(-50%,-50%) rotate(0deg); }
+  .menu-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
+  .menu-toggle svg { width: 24px; height: 24px; fill: var(--icon-fill); transition: fill 0.2s; }
+  .menu-toggle:hover svg { fill: var(--accent-primary); }
+
+  @media (max-width: 768px) {
+    .nav-menu { display: none; position: absolute; top: 100%; left: 0; width: 100%; background: var(--header-bg); flex-direction: column; padding: 20px; gap: 10px; border-bottom: 2px solid var(--accent-primary); z-index: 1000; }
+    .nav-menu.show { display: flex; }
+    .menu-toggle { display: block; }
+    .header { padding: 0 20px 0 0; }
+    .brand { gap: 8px; }
+  }
+
+  .scroll-top {
+    position: fixed; bottom: 30px; right: 30px; width: 50px; height: 50px; background: var(--accent-primary); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; visibility: hidden; z-index: 999;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2); border: none; color: white; font-size: 24px; font-weight: bold;
+    transition: transform 0.2s, opacity 0.3s, visibility 0.3s, background 0.2s;
+  }
+  .scroll-top.show { opacity: 1; visibility: visible; }
+  .scroll-top:hover { transform: scale(1.1); background: var(--accent-secondary); }
+  .scroll-top:active { transform: scale(0.95); }
+
+  main { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 30px; }
+  section { display: none; padding: 60px 0; opacity: 0; transform: translateY(30px); transition: opacity 0.5s ease, transform 0.5s ease; }
+  section.active { display: block; opacity: 1; transform: translateY(0); }
+
+  .section-tag { display: inline-block; font-family: 'Space Mono', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.3em; color: var(--accent-primary); margin-bottom: 1rem; border: 1px solid var(--border-color); padding: 0.3rem 1rem; border-radius: 30px; animation: slideInLeft 0.8s ease; }
+  @keyframes slideInLeft { from{opacity:0; transform:translateX(-50px);} to{opacity:1; transform:translateX(0);} }
+  h2 { font-family: 'Space Mono', monospace; font-size: clamp(2rem,5vw,3.5rem); font-weight: 700; line-height: 1.1; margin-bottom: 1.5rem; animation: slideInRight 0.8s ease; }
+  @keyframes slideInRight { from{opacity:0; transform:translateX(50px);} to{opacity:1; transform:translateX(0);} }
+  .accent { color: var(--accent-primary); }
+  p { color: var(--text-secondary); font-size: 1.1rem; margin-bottom: 2rem; }
+
+  /* Setup cards */
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin: 40px 0; }
+  .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 24px; padding: 30px; transition: all 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.05); animation: popIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275) forwards; opacity: 0; transform: scale(0.8); }
+  .grid-3 .card:nth-child(1) { animation-delay: 0.1s; }
+  .grid-3 .card:nth-child(2) { animation-delay: 0.2s; }
+  .grid-3 .card:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes popIn { 0%{opacity:0; transform:scale(0.8);} 100%{opacity:1; transform:scale(1);} }
+  .card:hover { transform: translateY(-5px) scale(1.02); border-color: var(--accent-primary); box-shadow: 0 20px 40px rgba(255,107,26,0.15); }
+  .step-number { font-family: 'Space Mono', monospace; font-size: 2.5rem; font-weight: 700; color: var(--step-color); margin-bottom: 1rem; display: inline-block; background: var(--accent-dim); padding: 0.2rem 1rem; border-radius: 50px; border: 1px solid var(--border-color); text-shadow: 0 0 10px var(--accent-dim); }
+  .btn { display: inline-block; padding: 12px 28px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #0a0f2e; font-family: 'Space Mono', monospace; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; text-decoration: none; border: none; border-radius: 50px; cursor: pointer; transition: all 0.3s; box-shadow: 0 8px 16px rgba(255,107,26,0.2); background-size: 200% auto; }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(255,107,26,0.3); background-position: 100% 0; }
+  .btn-outline { background: transparent; border: 2px solid var(--accent-primary); color: var(--accent-primary); box-shadow: none; }
+  .btn-outline:hover { background: var(--accent-dim); color: var(--accent-glow); border-color: var(--accent-secondary); }
+  .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 15px; margin: 20px 0; border: 1px solid var(--border-color); }
+  .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+  /* Components grid */
+  .component-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-top: 40px; }
+  .component-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; overflow: hidden; transition: all 0.3s; animation: slideUp 0.6s ease forwards; opacity: 0; }
+  @keyframes slideUp { from{opacity:0; transform:translateY(50px);} to{opacity:1; transform:translateY(0);} }
+  .component-card:hover { transform: translateY(-5px); border-color: var(--accent-primary); box-shadow: 0 20px 30px rgba(255,107,26,0.15); }
+  .component-image { aspect-ratio: 16/9; overflow: hidden; background: var(--code-bg); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: transform 0.2s; }
+  .component-image:hover { transform: scale(1.02); }
+  .component-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+  .component-card:hover .component-image img { transform: scale(1.05); }
+  .badge { display: inline-block; font-family: 'Space Mono', monospace; font-size: 0.6rem; text-transform: uppercase; background: var(--accent-dim); color: var(--accent-primary); padding: 0.2rem 0.8rem; border-radius: 20px; margin-bottom: 10px; }
+  .component-info { padding: 20px; }
+
+  /* ===== PROJECTS – ACCORDION ===== */
+  .project-accordion { margin: 40px 0; }
+  .project-category { margin-bottom: 15px; }
+  .category-btn {
+    width: 100%; background: var(--card-bg); border: 2px solid var(--accent-primary); color: var(--text-primary);
+    padding: 20px 25px; text-align: left; font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700;
+    border-radius: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+    transition: all 0.3s;
+  }
+  .category-btn:hover { background: var(--accent-primary); color: #0f172a; }
+  .category-content { display: none; padding: 20px 0 0 0; background: var(--card-bg); border-radius: 15px; margin-top: 10px; }
+  .category-content.show { display: block; animation: slideDown 0.3s ease; }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+  .projects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(550px, 1fr)); gap: 30px; margin-bottom: 20px; }
+  .project-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; overflow: hidden; transition: all 0.3s; }
+  .project-card:hover { transform: translateY(-5px); border-color: var(--accent-primary); box-shadow: 0 20px 30px rgba(255,107,26,0.15); }
+  .project-video { aspect-ratio: 16/9; background: var(--code-bg); border-bottom: 1px solid var(--border-color); }
+  .project-video iframe { width: 100%; height: 100%; border: none; }
+  .project-info { padding: 20px; }
+  .project-title { font-family: 'Space Mono', monospace; font-size: 1.3rem; font-weight: 700; margin-bottom: 10px; color: var(--accent-primary); }
+  .project-desc { margin-bottom: 15px; color: var(--text-secondary); }
+  .wiring-section { margin: 15px 0; background: var(--accent-dim); padding: 12px; border-radius: 12px; }
+  .wiring-section h4 { font-family: 'Space Mono', monospace; font-size: 0.9rem; margin-bottom: 8px; color: var(--accent-primary); }
+  .wiring-section ul { list-style: none; display: flex; flex-wrap: wrap; gap: 10px; }
+  .wiring-section li { font-family: 'Space Mono', monospace; font-size: 0.75rem; background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); }
+  .circuit-svg {
+    margin: 15px 0; background: var(--code-bg); border-radius: 12px; padding: 10px; display: flex; justify-content: center; align-items: center;
+    border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.2s;
+  }
+  .circuit-svg img {
+    max-width: 100%; height: auto; display: block; pointer-events: none;
+  }
+  .circuit-svg:hover { transform: scale(1.02); border-color: var(--accent-primary); }
+  .project-parts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; list-style: none; }
+  .project-parts li { font-family: 'Space Mono', monospace; font-size: 0.7rem; background: var(--accent-dim); color: var(--accent-primary); padding: 0.2rem 0.8rem; border-radius: 20px; }
+  .code-block { position: relative; margin: 15px 0 0; }
+  .copy-code { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.1); color: var(--text-secondary); border: 1px solid var(--border-color); padding: 5px 12px; border-radius: 6px; font-family: 'Space Mono', monospace; font-size: 0.7rem; cursor: pointer; transition: all 0.2s; z-index: 2; }
+  .copy-code:hover { background: var(--accent-primary); color: #0f172a; }
+  pre { background: var(--code-bg); color: var(--code-text); padding: 25px; border-radius: 15px; overflow-x: auto; font-family: 'Space Mono', monospace; font-size: 0.85rem; border: 1px solid var(--border-color); }
+
+  /* Lightbox Modal */
+  .lightbox-modal {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9);
+    z-index: 2000; justify-content: center; align-items: center; cursor: pointer; overflow: auto;
+  }
+  .lightbox-modal.active { display: flex; }
+  .lightbox-content { max-width: 90vw; max-height: 90vh; margin: auto; display: flex; justify-content: center; align-items: center; }
+  .lightbox-content img { max-width: 100%; max-height: 90vh; width: auto; height: auto; object-fit: contain; border-radius: 8px; box-shadow: 0 0 30px rgba(0,0,0,0.5); cursor: default; }
+  .close-lightbox { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; transition: 0.2s; z-index: 2001; }
+  .close-lightbox:hover { color: var(--accent-primary); }
+
+  .about-text { max-width: 800px; margin: 0 auto; text-align: center; animation: fadeInUp 1s ease forwards; opacity: 0; }
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+  footer { text-align: center; padding: 40px; border-top: 1px solid var(--footer-border); color: var(--text-secondary); font-family: 'Space Mono', monospace; font-size: 0.8rem; position: relative; z-index: 1; }
+  .button-group { display: flex; gap: 30px; justify-content: center; margin-top: 2rem; flex-wrap: wrap; }
+
+  @media (max-width: 768px) { .projects-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body data-theme="light">
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+
+  <header class="header">
+    <div class="brand">
+      <div class="logo-wrapper">
+        <img src="logo.svg" alt="Fashion Circuits" class="logo-svg">
+      </div>
+      <div class="logo-stack">
+        <span class="logo-top">FASHION</span>
+        <span class="logo-bottom">CIRCUITS</span>
+      </div>
+    </div>
+    <nav class="nav-menu" id="navMenu">
+      <a class="active">Home</a>
+      <a>Setup</a>
+      <a>Components</a>
+      <a>Projects</a>
+      <a>About</a>
+    </nav>
+    <div class="header-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">
+        <svg class="sun-icon" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
+        <svg class="moon-icon" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-3.03 0-5.5-2.47-5.5-5.5 0-1.82.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+      </button>
+      <button class="menu-toggle" onclick="toggleMenu()"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
+    </div>
+  </header>
+
+  <button class="scroll-top" id="scrollTopBtn" aria-label="Scroll to top">↑</button>
+
+  <main>
+    <section id="home" class="active">
+      <div style="text-align: center; max-width: 800px; margin: 0 auto;">
+        <span class="section-tag">WEARABLE TECHNOLOGY · INTERACTIVE FASHION</span>
+        <h2>Where Fashion <span class="accent">Meets Circuits</span></h2>
+        <p>Your complete Arduino Starter Kit for building the future of fashion and technology. No experience required — just curiosity.</p>
+        <div class="button-group">
+          <button class="btn" onclick="showPage('setup')">START BUILDING →</button>
+          <button class="btn btn-outline" onclick="showPage('components')">EXPLORE KIT →</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="setup">
+      <span class="section-tag">Getting Started</span>
+      <h2>Software <span class="accent">Setup</span></h2>
+      <p>Get your development environment ready in three simple steps.</p>
+      <div class="grid-3">
+        <div class="card"><div class="step-number">01</div><h3>Install Arduino IDE</h3><p>The free software to write and upload code to your Arduino board.</p><a href="https://www.arduino.cc/en/software" target="_blank" class="btn" style="margin-top:1rem;">DOWNLOAD IDE</a></div>
+        <div class="card"><div class="step-number">02</div><h3>CH340 Driver</h3><p>Required for your Arduino UNO R3 to communicate with your computer.</p><a href="https://www.wch-ic.com/downloads/CH341SER_EXE.html" target="_blank" class="btn" style="margin-top:1rem;">GET DRIVER</a></div>
+        <div class="card"><div class="step-number">03</div><h3>Setup Tutorial</h3><p>Watch our step-by-step video guide for first-time users.</p><div class="video-container" style="margin-top:1rem;"><iframe src="https://www.youtube.com/embed/zJ-LqeX_fLU" allowfullscreen></iframe></div></div>
+      </div>
+    </section>
+
+    <section id="components">
+      <span class="section-tag">Component Catalog</span>
+      <h2>What's In <span class="accent">Your Kit</span></h2>
+      <p>Click any image to zoom. Replace placeholder images with your own photos in the <code>image_componet</code> folder.</p>
+      <div class="component-grid">
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/arduino-uno.png" alt="Arduino UNO R3"></div><div class="component-info"><span class="badge">Main Controller</span><h3>Arduino UNO R3 (CH340)</h3><p>The brain of your kit. 14 digital I/O pins, 6 analog inputs, USB connectivity.</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/usb-cable.png" alt="USB Cable"></div><div class="component-info"><span class="badge">Connection</span><h3>USB Cable</h3><p>Used to connect the Arduino to a power source or to program it.</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/breadboard.png" alt="Full-size Breadboard"></div><div class="component-info"><span class="badge">Prototyping</span><h3>Full-size Breadboard</h3><p>The base for building and testing circuits without soldering.</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/jumper-mm.png" alt="Jumper Wires MM"></div><div class="component-info"><span class="badge">Prototyping</span><h3>Jumper Wires (MM) – 30pcs</h3><p>Male-to-Male jumper wires, 10cm, for breadboard connections.</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/jumper-mf.png" alt="Jumper Wires MF"></div><div class="component-info"><span class="badge">Prototyping</span><h3>Jumper Wires (MF) – 10pcs</h3><p>Male-to-Female jumper wires, 10cm, for connecting sensors/modules.</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/led-red.png" alt="Red LED"></div><div class="component-info"><span class="badge">Output</span><h3>5mm Diffused Red LED</h3><p>Standard red LED for visual indicators and light effects.</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/led-green.png" alt="Green LED"></div><div class="component-info"><span class="badge">Output</span><h3>5mm Diffused Green LED</h3><p>Standard green LED for visual indicators.</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/led-blue.png" alt="Blue LED"></div><div class="component-info"><span class="badge">Output</span><h3>5mm Diffused Blue LED</h3><p>Standard blue LED for visual indicators.</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/led-yellow.png" alt="Yellow LED"></div><div class="component-info"><span class="badge">Output</span><h3>5mm Diffused Yellow/Orange LED</h3><p>Warm yellow/orange LED.</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/buzzer.png" alt="Buzzer"></div><div class="component-info"><span class="badge">Output</span><h3>Buzzer</h3><p>Creates sound alerts or simple tones for audio feedback.</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/relay.png" alt="Relay Module"></div><div class="component-info"><span class="badge">Output</span><h3>1-Channel Relay Module</h3><p>Allows the Arduino to control high‑power devices (lights, motors, etc.).</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/resistors.png" alt="Resistor Pack"></div><div class="component-info"><span class="badge">Passive</span><h3>Resistor Pack</h3><p>Essential resistors: 220Ω, 330Ω, 1kΩ, 10kΩ (multiple pieces each).</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/potentiometer.png" alt="Potentiometer"></div><div class="component-info"><span class="badge">Passive</span><h3>Potentiometer</h3><p>Variable resistor – perfect for controlling brightness, volume, or analog input.</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/push-buttons.png" alt="Push Buttons"></div><div class="component-info"><span class="badge">Input</span><h3>Push Buttons</h3><p>Tactile switches for user input, ideal for button‑controlled projects.</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/dht11.png" alt="DHT11 Sensor"></div><div class="component-info"><span class="badge">Sensor</span><h3>DHT11</h3><p>Temperature and humidity sensor – measures ambient climate data.</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/hc-sr04.png" alt="HC-SR04 Ultrasonic"></div><div class="component-info"><span class="badge">Sensor</span><h3>HC-SR04 Ultrasonic</h3><p>Distance sensor using sound waves (2cm–400cm).</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/ir-sensor.png" alt="IR Obstacle Sensor"></div><div class="component-info"><span class="badge">Sensor</span><h3>IR Obstacle Sensor</h3><p>Digital infrared detection – triggers when an object is in front.</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/ldr.png" alt="LDR Module"></div><div class="component-info"><span class="badge">Sensor</span><h3>LDR Module</h3><p>Light Dependent Resistor – detects ambient light levels.</p></div></div>
+        <div class="component-card"><div class="component-image" onclick="openLightbox(this)"><img src="image_componet/sound-sensor.png" alt="Sound Sensor"></div><div class="component-info"><span class="badge">Sensor</span><h3>Sound Sensor</h3><p>Microphone module – responds to claps or noise levels.</p></div></div>
+      </div>
+    </section>
+
+    <section id="projects">
+      <span class="section-tag">Build Projects</span>
+      <h2>Creative <span class="accent">Applications</span></h2>
+      <p>20 beginner‑friendly projects – click on a component bar to expand. Click circuit diagrams to zoom.</p>
+
+      <div class="project-accordion">
+        <!-- LED Category -->
+        <div class="project-category">
+          <button class="category-btn" onclick="toggleCategory(1, this)">LED (Red, Green, Blue, Yellow) <span>+</span></button>
+          <div id="cat1" class="category-content">
+            <div class="projects-grid">
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/6fPhN6wE2yY" title="SOS Signal Flasher" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">SOS Signal Flasher</div><div class="project-desc">Uses an LED to blink the Morse code for SOS (… --- …).</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>LED anode → Arduino pin 9 (via 220Ω resistor)</li><li>LED cathode → GND</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/sos-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>LED (any color)</li><li>220Ω resistor</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('sos')">Copy</button><pre id="code_sos">int led = 9;
+void setup() { pinMode(led, OUTPUT); }
+void loop() {
+  for(int i=0;i<3;i++){ digitalWrite(led,HIGH); delay(300); digitalWrite(led,LOW); delay(300); } // S
+  delay(700);
+  for(int i=0;i<3;i++){ digitalWrite(led,HIGH); delay(900); digitalWrite(led,LOW); delay(300); } // O
+  delay(700);
+  for(int i=0;i<3;i++){ digitalWrite(led,HIGH); delay(300); digitalWrite(led,LOW); delay(300); } // S
+  delay(5000);
+}</pre></div></div></div>
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/jI-_M3rO42Y" title="Digital Hourglass" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">Digital Hourglass</div><div class="project-desc">Lights a new LED every 10 minutes to track time.</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>LED 1 → pin 9 (via 220Ω)</li><li>LED 2 → pin 10 (via 220Ω)</li><li>LED 3 → pin 11 (via 220Ω)</li><li>LED 4 → pin 12 (via 220Ω)</li><li>Cathodes all to GND</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/hourglass-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>4 LEDs</li><li>4× 220Ω resistors</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('hourglass')">Copy</button><pre id="code_hourglass">int leds[] = {9,10,11,12};
+void setup() { for(int i=0;i<4;i++) pinMode(leds[i],OUTPUT); }
+void loop() {
+  for(int i=0;i<4;i++){ digitalWrite(leds[i],HIGH); delay(600000); } // 10 min = 600,000 ms
+  for(int i=0;i<4;i++) digitalWrite(leds[i],LOW);
+  delay(1000);
+}</pre></div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Buzzer Category -->
+        <div class="project-category">
+          <button class="category-btn" onclick="toggleCategory(2, this)">Buzzer <span>+</span></button>
+          <div id="cat2" class="category-content">
+            <div class="projects-grid">
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/CRg4mW4Lmco" title="Musical Doorbell" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">Musical Doorbell</div><div class="project-desc">Plays a 5‑second melody when triggered (e.g., by button).</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>Buzzer (+) → pin 8</li><li>Buzzer (-) → GND</li><li>(Optional button: pin 2 → GND with pull‑up)</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/doorbell-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>Buzzer</li><li>Push button (optional)</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('doorbell')">Copy</button><pre id="code_doorbell">int buzzer = 8;
+int melody[] = {262,294,330,349,392,440,494,523};
+int noteDuration = 500;
+void setup() { pinMode(buzzer,OUTPUT); }
+void loop() {
+  for(int i=0;i<8;i++){ tone(buzzer,melody[i],noteDuration); delay(noteDuration*1.3); }
+  delay(2000);
+}</pre></div></div></div>
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/0B8NqFQqkRE" title="Low-Battery Warning Simulator" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">Low‑Battery Warning Simulator</div><div class="project-desc">Makes a short "chirp" every 30 seconds.</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>Buzzer (+) → pin 8</li><li>Buzzer (-) → GND</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/lowbat-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>Buzzer</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('lowbat')">Copy</button><pre id="code_lowbat">int buzzer = 8;
+void setup() { pinMode(buzzer,OUTPUT); }
+void loop() {
+  tone(buzzer,2000,200); delay(30000);
+}</pre></div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Relay Category -->
+        <div class="project-category">
+          <button class="category-btn" onclick="toggleCategory(3, this)">1-Channel Relay Module <span>+</span></button>
+          <div id="cat3" class="category-content">
+            <div class="projects-grid">
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/5b3f9l2j5jM" title="Automatic Lamp Switch" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">Automatic Lamp Switch</div><div class="project-desc">Toggles a lamp (or LED) on/off every few minutes.</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>Relay IN → pin 7</li><li>Relay VCC → 5V</li><li>Relay GND → GND</li><li>Lamp (or LED) connected to COM and NO terminals</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/lamp-switch-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>Relay module</li><li>Lamp / LED</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('lamp')">Copy</button><pre id="code_lamp">int relay = 7;
+void setup() { pinMode(relay,OUTPUT); }
+void loop() {
+  digitalWrite(relay,HIGH); delay(180000); // on for 3 min
+  digitalWrite(relay,LOW);  delay(180000); // off for 3 min
+}</pre></div></div></div>
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/fJ3jTdRpO4E" title="Remote Fan Control" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">Remote Fan Control</div><div class="project-desc">Uses a button to safely turn a DC fan on/off via relay.</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>Relay IN → pin 7</li><li>Push button → pin 2 (with INPUT_PULLUP)</li><li>Relay VCC/GND as above</li><li>Fan connected to COM and NO</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/fan-control-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>Relay module</li><li>Push button</li><li>DC fan</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('fan')">Copy</button><pre id="code_fan">int relay = 7, button = 2;
+boolean state = false;
+void setup() { pinMode(relay,OUTPUT); pinMode(button,INPUT_PULLUP); }
+void loop() {
+  if(digitalRead(button)==LOW){ delay(50); if(digitalRead(button)==LOW){
+    state = !state; digitalWrite(relay,state); while(digitalRead(button)==LOW); delay(50);
+  }}
+}</pre></div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Potentiometer Category -->
+        <div class="project-category">
+          <button class="category-btn" onclick="toggleCategory(4, this)">Potentiometer <span>+</span></button>
+          <div id="cat4" class="category-content">
+            <div class="projects-grid">
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/3drgB1dO6_8" title="Manual LED Dimmer" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">Manual LED Dimmer</div><div class="project-desc">Turn the knob to smoothly adjust LED brightness.</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>Potentiometer middle pin → A0</li><li>Potentiometer outer pins → 5V and GND</li><li>LED anode → pin 9 (via 220Ω)</li><li>LED cathode → GND</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/led-dimmer-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>Potentiometer</li><li>LED</li><li>220Ω resistor</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('dimmer')">Copy</button><pre id="code_dimmer">int pot = A0, led = 9;
+void setup() { pinMode(led,OUTPUT); }
+void loop() {
+  int val = analogRead(pot);
+  int bright = map(val,0,1023,0,255);
+  analogWrite(led,bright);
+}</pre></div></div></div>
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/XNpFz8yT4xU" title="Blink Speed Controller" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">Blink Speed Controller</div><div class="project-desc">Knob controls how fast an LED blinks.</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>Potentiometer middle pin → A0</li><li>Potentiometer outer pins → 5V and GND</li><li>LED anode → pin 13 (built‑in) or pin 9 with resistor</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/blink-speed-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>Potentiometer</li><li>LED</li><li>220Ω resistor</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('blinkspeed')">Copy</button><pre id="code_blinkspeed">int pot = A0, led = 13;
+void setup() { pinMode(led,OUTPUT); }
+void loop() {
+  int val = analogRead(pot);
+  int delayTime = map(val,0,1023,50,1000);
+  digitalWrite(led,HIGH); delay(delayTime);
+  digitalWrite(led,LOW);  delay(delayTime);
+}</pre></div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Push Buttons Category -->
+        <div class="project-category">
+          <button class="category-btn" onclick="toggleCategory(5, this)">Push Buttons <span>+</span></button>
+          <div id="cat5" class="category-content">
+            <div class="projects-grid">
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/74tZ8x2_t0I" title="Toggle Light Switch" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">Toggle Light Switch</div><div class="project-desc">Press once to turn LED on, again to turn off (like a real switch).</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>Push button one side → pin 2</li><li>Other side → GND</li><li>LED anode → pin 9 (via 220Ω)</li><li>LED cathode → GND</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/toggle-switch-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>Push button</li><li>LED</li><li>220Ω resistor</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('toggle')">Copy</button><pre id="code_toggle">int button = 2, led = 9;
+boolean state = false;
+void setup() { pinMode(button,INPUT_PULLUP); pinMode(led,OUTPUT); }
+void loop() {
+  if(digitalRead(button)==LOW){ delay(50); if(digitalRead(button)==LOW){
+    state = !state; digitalWrite(led,state); while(digitalRead(button)==LOW); delay(50);
+  }}
+}</pre></div></div></div>
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/05qT_fZv6kI" title="Simple Counter" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">Simple Counter</div><div class="project-desc">Every press increments a counter shown on the Serial Monitor.</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>Push button one side → pin 2</li><li>Other side → GND</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/counter-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>Push button</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('counter')">Copy</button><pre id="code_counter">int button = 2, count = 0;
+void setup() { pinMode(button,INPUT_PULLUP); Serial.begin(9600); }
+void loop() {
+  if(digitalRead(button)==LOW){ delay(50); if(digitalRead(button)==LOW){
+    count++; Serial.println(count); while(digitalRead(button)==LOW); delay(50);
+  }}
+}</pre></div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DHT11 Category -->
+        <div class="project-category">
+          <button class="category-btn" onclick="toggleCategory(6, this)">DHT11 (Temperature & Humidity) <span>+</span></button>
+          <div id="cat6" class="category-content">
+            <div class="projects-grid">
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/9gZtjX6sBvE" title="High-Heat Warning LED" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">High‑Heat Warning LED</div><div class="project-desc">Red LED turns on when temperature > 30°C.</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>DHT11 data → pin 2</li><li>DHT11 VCC → 5V, GND → GND</li><li>Red LED anode → pin 9 (via 220Ω)</li><li>LED cathode → GND</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/heat-warning-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>DHT11</li><li>Red LED</li><li>220Ω resistor</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('heat')">Copy</button><pre id="code_heat">#include &lt;DHT.h&gt;
+DHT dht(2,DHT11);
+int led = 9;
+void setup() { pinMode(led,OUTPUT); dht.begin(); }
+void loop() {
+  float t = dht.readTemperature();
+  if(t > 30) digitalWrite(led,HIGH); else digitalWrite(led,LOW);
+  delay(2000);
+}</pre></div></div></div>
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/nUfUqScFZ6s" title="Humidity Monitor" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">Humidity Monitor</div><div class="project-desc">Green LED lights when humidity is 40‑60% (comfortable).</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>DHT11 data → pin 2</li><li>Green LED anode → pin 9 (via 220Ω)</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/humidity-monitor-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>DHT11</li><li>Green LED</li><li>220Ω resistor</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('humid')">Copy</button><pre id="code_humid">#include &lt;DHT.h&gt;
+DHT dht(2,DHT11);
+int led = 9;
+void setup() { pinMode(led,OUTPUT); dht.begin(); }
+void loop() {
+  float h = dht.readHumidity();
+  if(h >= 40 && h <= 60) digitalWrite(led,HIGH); else digitalWrite(led,LOW);
+  delay(2000);
+}</pre></div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HC-SR04 Category -->
+        <div class="project-category">
+          <button class="category-btn" onclick="toggleCategory(7, this)">HC-SR04 Ultrasonic Sensor <span>+</span></button>
+          <div id="cat7" class="category-content">
+            <div class="projects-grid">
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/8s6PY3PfpK8" title="Parking Sensor" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">Parking Sensor</div><div class="project-desc">Buzzer beeps faster as an object gets closer.</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>HC-SR04 VCC → 5V, GND → GND</li><li>Trig → pin 9, Echo → pin 10</li><li>Buzzer (+) → pin 8, (-) → GND</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/parking-sensor-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>HC-SR04</li><li>Buzzer</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('parking')">Copy</button><pre id="code_parking">int trig=9, echo=10, buzzer=8;
+void setup() { pinMode(trig,OUTPUT); pinMode(echo,INPUT); pinMode(buzzer,OUTPUT); }
+void loop() {
+  digitalWrite(trig,LOW); delayMicroseconds(2); digitalWrite(trig,HIGH); delayMicroseconds(10); digitalWrite(trig,LOW);
+  long duration = pulseIn(echo,HIGH);
+  int distance = duration * 0.034 / 2;
+  if(distance > 0 && distance < 50){
+    int beepDelay = map(distance,0,50,50,500);
+    tone(buzzer,1000,beepDelay); delay(beepDelay);
+  }
+  delay(50);
+}</pre></div></div></div>
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/gAmT6faEX4E" title="Digital Tape Measure" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">Digital Tape Measure</div><div class="project-desc">Prints distance to the Serial Monitor.</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>HC-SR04 VCC → 5V, GND → GND</li><li>Trig → pin 9, Echo → pin 10</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/tape-measure-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>HC-SR04</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('tape')">Copy</button><pre id="code_tape">int trig=9, echo=10;
+void setup() { pinMode(trig,OUTPUT); pinMode(echo,INPUT); Serial.begin(9600); }
+void loop() {
+  digitalWrite(trig,LOW); delayMicroseconds(2); digitalWrite(trig,HIGH); delayMicroseconds(10); digitalWrite(trig,LOW);
+  long duration = pulseIn(echo,HIGH);
+  int distance = duration * 0.034 / 2;
+  Serial.print("Distance: "); Serial.print(distance); Serial.println(" cm");
+  delay(500);
+}</pre></div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- IR Obstacle Sensor Category -->
+        <div class="project-category">
+          <button class="category-btn" onclick="toggleCategory(8, this)">IR Obstacle Sensor <span>+</span></button>
+          <div id="cat8" class="category-content">
+            <div class="projects-grid">
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/QdqoxqQ3iTo" title="People/Objects Counter" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">People/Objects Counter</div><div class="project-desc">Counts each time an object passes in front of the sensor.</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>IR sensor VCC → 5V, GND → GND</li><li>OUT → pin 2</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/ir-counter-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>IR Obstacle Sensor</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('counterIr')">Copy</button><pre id="code_counterIr">int sensor = 2, count = 0;
+void setup() { pinMode(sensor,INPUT); Serial.begin(9600); }
+void loop() {
+  if(digitalRead(sensor)==LOW){ count++; Serial.println(count); delay(500); }
+}</pre></div></div></div>
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/JTdl5u9Z0nw" title="Hand-Wave Lamp" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">Hand‑Wave Lamp</div><div class="project-desc">Wave your hand to toggle an LED or relay.</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>IR sensor OUT → pin 2</li><li>LED anode → pin 9 (via 220Ω), cathode → GND</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/hand-wave-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>IR Obstacle Sensor</li><li>LED / relay</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('wave')">Copy</button><pre id="code_wave">int sensor = 2, led = 9;
+boolean state = false;
+void setup() { pinMode(sensor,INPUT); pinMode(led,OUTPUT); }
+void loop() {
+  if(digitalRead(sensor)==LOW){ delay(50); if(digitalRead(sensor)==LOW){
+    state = !state; digitalWrite(led,state); while(digitalRead(sensor)==LOW); delay(50);
+  }}
+}</pre></div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LDR Module Category -->
+        <div class="project-category">
+          <button class="category-btn" onclick="toggleCategory(9, this)">LDR Module (Light Sensor) <span>+</span></button>
+          <div id="cat9" class="category-content">
+            <div class="projects-grid">
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/LTkX-VO3q9Y" title="Automatic Night Light" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">Automatic Night Light</div><div class="project-desc">LED turns on when it gets dark, off when bright.</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>LDR module VCC → 5V, GND → GND</li><li>OUT → A0</li><li>LED anode → pin 9 (via 220Ω), cathode → GND</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/night-light-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>LDR Module</li><li>LED</li><li>220Ω resistor</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('nightlight')">Copy</button><pre id="code_nightlight">int ldr = A0, led = 9;
+void setup() { pinMode(led,OUTPUT); }
+void loop() {
+  int val = analogRead(ldr);
+  if(val < 300) digitalWrite(led,HIGH); else digitalWrite(led,LOW);
+  delay(100);
+}</pre></div></div></div>
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/XDph8e1TSSA" title="Sunrise Alarm" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">Sunrise Alarm</div><div class="project-desc">Buzzer sounds when the first light of morning is detected.</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>LDR module OUT → A0</li><li>Buzzer (+) → pin 8, (-) → GND</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/sunrise-alarm-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>LDR Module</li><li>Buzzer</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('sunrise')">Copy</button><pre id="code_sunrise">int ldr = A0, buzzer = 8;
+boolean triggered = false;
+void setup() { pinMode(buzzer,OUTPUT); }
+void loop() {
+  int val = analogRead(ldr);
+  if(val > 800 && !triggered){ triggered = true; tone(buzzer,2000,3000); }
+  if(val < 200) triggered = false;
+  delay(500);
+}</pre></div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sound Sensor Category -->
+        <div class="project-category">
+          <button class="category-btn" onclick="toggleCategory(10, this)">Sound Sensor <span>+</span></button>
+          <div id="cat10" class="category-content">
+            <div class="projects-grid">
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/wlbmGvygW5E" title="Clap-to-Light Switch" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">Clap‑to‑Light Switch</div><div class="project-desc">A loud clap toggles an LED or relay.</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>Sound sensor VCC → 5V, GND → GND</li><li>OUT → pin 2 (digital)</li><li>LED anode → pin 9 (via 220Ω)</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/clap-switch-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>Sound Sensor</li><li>LED</li><li>220Ω resistor</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('clap')">Copy</button><pre id="code_clap">int sound = 2, led = 9;
+boolean state = false;
+void setup() { pinMode(sound,INPUT); pinMode(led,OUTPUT); }
+void loop() {
+  if(digitalRead(sound)==HIGH){ delay(50); if(digitalRead(sound)==HIGH){
+    state = !state; digitalWrite(led,state); while(digitalRead(sound)==HIGH); delay(50);
+  }}
+}</pre></div></div></div>
+              <div class="project-card"><div class="project-video"><iframe src="https://www.youtube.com/embed/2pCJZbj9DZQ" title="Visual Noise Meter" allowfullscreen></iframe></div><div class="project-info"><div class="project-title">Visual Noise Meter</div><div class="project-desc">The louder the sound, the more LEDs light up.</div><div class="wiring-section"><h4>📌 Wiring</h4><ul><li>Sound sensor OUT → A0 (analog)</li><li>3 LEDs → pins 9,10,11 via 220Ω resistors</li></ul></div><div class="circuit-svg" onclick="openLightbox(this)"><img src="image_digram/noise-meter-circuit.png" alt="Circuit Diagram"></div><ul class="project-parts"><li>Arduino UNO R3</li><li>Sound Sensor</li><li>3 LEDs (red, yellow, green)</li><li>3× 220Ω resistors</li></ul><div class="code-block"><button class="copy-code" onclick="copyCode('noise')">Copy</button><pre id="code_noise">int sound = A0;
+int leds[] = {9,10,11};
+void setup() { for(int i=0;i<3;i++) pinMode(leds[i],OUTPUT); }
+void loop() {
+  int val = analogRead(sound);
+  int level = map(val,0,1023,0,3);
+  for(int i=0;i<3;i++) digitalWrite(leds[i], i < level ? HIGH : LOW);
+  delay(100);
+}</pre></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="about">
+      <span class="section-tag">The Story</span>
+      <h2>Fashion <span class="accent">+ Tech</span></h2>
+      <div class="about-text">
+        <p>We are designers and engineers who believe the next big thing is wearable. This kit merges code with fabric, sensors with style.</p>
+        <p>Every component is chosen to inspire interactive fashion — from light-up dresses to sound-reactive accessories.</p>
+        <p style="margin-top:2rem; font-family:'Space Mono'; color:var(--accent-primary);">— Fashion Circuits 2026 —</p>
+        <p style="font-size:0.9rem;">Arduino Starter Kit Documentation</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span style="color:var(--accent-primary);">FASHION CIRCUITS</span> — wear your code.<br>© 2025 Creative Tech Studio
+  </footer>
+
+  <!-- Lightbox Modal -->
+  <div id="lightbox" class="lightbox-modal" onclick="closeLightbox()">
+    <span class="close-lightbox" onclick="closeLightbox()">&times;</span>
+    <div class="lightbox-content">
+      <img id="lightbox-img" src="" alt="Full-size diagram">
+    </div>
+  </div>
+
+  <script>
+    function applySystemTheme() {
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    }
+    applySystemTheme();
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applySystemTheme);
+
+    function toggleTheme() {
+      const current = document.body.getAttribute('data-theme');
+      const newTheme = current === 'light' ? 'dark' : 'light';
+      document.body.setAttribute('data-theme', newTheme);
+      const btn = document.getElementById('themeToggle');
+      btn.style.transform = 'scale(0.9)';
+      setTimeout(() => btn.style.transform = '', 150);
+    }
+
+    const scrollBtn = document.getElementById('scrollTopBtn');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 300) scrollBtn.classList.add('show');
+      else scrollBtn.classList.remove('show');
+    });
+    scrollBtn.addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+
+    function showPage(pageId) {
+      document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+      document.querySelectorAll('.nav-menu a').forEach(l => l.classList.remove('active'));
+      document.querySelectorAll('.nav-menu a').forEach(l => {
+        if (l.textContent.toLowerCase() === pageId || (pageId==='home' && l.textContent==='Home')) l.classList.add('active');
+      });
+      document.getElementById('navMenu').classList.remove('show');
+      const active = document.getElementById(pageId);
+      active.querySelectorAll('.section-tag, h2, .card, .component-card, .project-card, .about-text').forEach(el => {
+        el.style.animation = 'none'; el.offsetHeight;
+        if (el.classList.contains('section-tag')) el.style.animation = 'slideInLeft 0.8s ease';
+        else if (el.classList.contains('card')) el.style.animation = 'popIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275) forwards';
+        else if (el.classList.contains('component-card')) el.style.animation = 'slideUp 0.6s ease forwards';
+        else if (el.classList.contains('project-card')) el.style.animation = 'fadeInUp 0.5s ease forwards';
+        else if (el.classList.contains('about-text')) el.style.animation = 'fadeInUp 1s ease forwards';
+        else if (el.tagName === 'H2') el.style.animation = 'slideInRight 0.8s ease';
+      });
+    }
+
+    function toggleMenu() { document.getElementById('navMenu').classList.toggle('show'); }
+
+    function toggleCategory(num, btn) {
+      const content = document.getElementById(`cat${num}`);
+      const allContents = document.querySelectorAll('.category-content');
+      const allSpans = document.querySelectorAll('.category-btn span:last-child');
+      if (content.classList.contains('show')) {
+        content.classList.remove('show');
+        btn.querySelector('span:last-child').textContent = '+';
+      } else {
+        allContents.forEach(c => { if (c !== content) c.classList.remove('show'); });
+        allSpans.forEach(s => s.textContent = '+');
+        content.classList.add('show');
+        btn.querySelector('span:last-child').textContent = '−';
+      }
+    }
+
+    function copyCode(id) {
+      const codeEl = document.getElementById(`code_${id}`);
+      if (!codeEl) return;
+      const textArea = document.createElement('textarea');
+      textArea.value = codeEl.textContent;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      const btn = event.target;
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+
+    // Lightbox functionality
+    function openLightbox(container) {
+      const img = container.querySelector('img');
+      if (!img) return;
+      const modal = document.getElementById('lightbox');
+      const modalImg = document.getElementById('lightbox-img');
+      modalImg.src = img.src;
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeLightbox() {
+      const modal = document.getElementById('lightbox');
+      modal.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightbox();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      showPage('home');
+      document.querySelectorAll('.nav-menu a').forEach(link => link.addEventListener('click', e => showPage(link.textContent.toLowerCase())));
+    });
+  </script>
+</body>
+</html>
